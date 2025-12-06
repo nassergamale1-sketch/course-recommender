@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8" />
+  <title>منصّة توصية الكورسات</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f172a;
+      color: #e5e7eb;
+      direction: rtl;
+    }
+
+    .app {
+      max-width: 800px;
+      margin: 0 auto;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.6rem;
+    }
+
+    header p {
+      margin: 4px 0 0;
+      font-size: 0.9rem;
+      color: #9ca3af;
+    }
+
+    #chat {
+      flex: 1;
+      background: #020617;
+      border-radius: 12px;
+      padding: 12px;
+      overflow-y: auto;
+      box-shadow: 0 0 0 1px #1f2937;
+    }
+
+    .msg {
+      max-width: 85%;
+      padding: 8px 10px;
+      margin-bottom: 8px;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    .msg.bot {
+      background: #111827;
+      align-self: flex-start;
+      border-bottom-right-radius: 2px;
+    }
+
+    .msg.user {
+      background: #22c55e;
+      color: #022c22;
+      align-self: flex-end;
+      border-bottom-left-radius: 2px;
+    }
+
+    .input-area {
+      margin-top: 10px;
+      display: flex;
+      gap: 8px;
+    }
+
+    .input-area input {
+      flex: 1;
+      padding: 10px;
+      border-radius: 999px;
+      border: 1px solid #4b5563;
+      background: #020617;
+      color: #e5e7eb;
+      outline: none;
+    }
+
+    .input-area button {
+      padding: 10px 18px;
+      border-radius: 999px;
+      border: none;
+      background: #22c55e;
+      color: #022c22;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .input-area button:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+
+    .courses {
+      margin-top: 6px;
+      padding-right: 12px;
+    }
+
+    .course-item {
+      margin-bottom: 6px;
+    }
+
+    .course-title {
+      font-weight: 600;
+    }
+
+    @media (max-width: 600px) {
+      .msg {
+        max-width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>منصّة توصية الكورسات</h1>
+      <p>شات بسيط يجمع بياناتك ويقترح لك مسار تعلّم مناسب 🎯</p>
+    </header>
+
+    <div id="chat"></div>
+
+    <div class="input-area">
+      <input id="userInput" type="text" placeholder="اكتب إجابتك هنا..." />
+      <button id="sendBtn">إرسال</button>
+    </div>
+  </div>
+
+  <script>
+    const chat = document.getElementById("chat");
+    const input = document.getElementById("userInput");
+    const sendBtn = document.getElementById("sendBtn");
+
+    const questions = [
+      "أهلاً 👋\nهسألك شوية أسئلة بسيطة عشان أظبط لك مسار تعلّم شخصي.\n\nأولاً: إنت دلوقتي طالب مدرسة، طالب جامعة، خريج جديد ولا تعمل؟",
+      "تمام ✅\nما هو مستواك في المجال اللي حابب تتعلمه؟ (مبتدئ / متوسط / متقدم)",
+      "جميل 👌\nحابب تتعلم إيه أو تبقى إيه؟ (مثال: Frontend Developer, Data Analyst, AI, Cyber Security, English...)",
+      "حلو 👌\nإيه اللغة اللي تفضّل الكورسات تكون بيها؟ (عربي / إنجليزي / الاتنين)",
+      "كويس ✨\nتقدر تخصص تقريباً كام ساعة في الأسبوع للتعلّم؟",
+      "آخر سؤال 🙌\nعندك إطار زمني معيّن لهدفك؟ (مثال: ٣ شهور، ٦ شهور، سنة...)"
+    ];
+
+    let currentStep = 0;
+    const answers = {
+      education_background: "",
+      current_level: "",
+      target_field_or_goal: "",
+      preferred_language: "",
+      available_hours_per_week: "",
+      time_frame: ""
+    };
+
+    function addMessage(text, sender = "bot") {
+      const msg = document.createElement("div");
+      msg.className = `msg ${sender}`;
+      msg.textContent = text;
+      chat.appendChild(msg);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function askNextQuestion() {
+      if (currentStep < questions.length) {
+        addMessage(questions[currentStep], "bot");
+      } else {
+        finishConversation();
+      }
+    }
+
+    function handleUserAnswer() {
+      const text = input.value.trim();
+      if (!text) return;
+      addMessage(text, "user");
+
+      switch (currentStep) {
+        case 0:
+          answers.education_background = text;
+          break;
+        case 1:
+          answers.current_level = text;
+          break;
+        case 2:
+          answers.target_field_or_goal = text;
+          break;
+        case 3:
+          answers.preferred_language = text;
+          break;
+        case 4:
+          answers.available_hours_per_week = text;
+          break;
+        case 5:
+          answers.time_frame = text;
+          break;
+      }
+
+      input.value = "";
+      currentStep++;
+      setTimeout(askNextQuestion, 400);
+    }
+
+    function getRecommendations(profile) {
+      const field = (profile.target_field_or_goal || "").toLowerCase();
+      const lang = (profile.preferred_language || "").toLowerCase();
+      const recs = [];
+
+      const isArabic = lang.includes("عرب") || lang.includes("ar");
+      const isEnglish = lang.includes("انج") || lang.includes("en") || lang.includes("إنج");
+
+      if (field.includes("front") || field.includes("فرونت")) {
+        recs.push({
+          title: "مسار فرونت إند للمبتدئين",
+          desc: "HTML + CSS + JavaScript ثم إطار عمل مثل React.",
+          lang: isArabic && !isEnglish ? "عربي" : isEnglish && !isArabic ? "إنجليزي" : "عربي/إنجليزي"
+        });
+      } else if (field.includes("data") || field.includes("داتا") || field.includes("تحليل")) {
+        recs.push({
+          title: "مسار Data Analysis",
+          desc: "Python + Excel/Sheets + SQL + Power BI أو Tableau.",
+          lang: isArabic && !isEnglish ? "عربي" : isEnglish && !isArabic ? "إنجليزي" : "عربي/إنجليزي"
+        });
+      } else if (field.includes("ai") || field.includes("ذكاء") || field.includes("machine")) {
+        recs.push({
+          title: "مدخل إلى الذكاء الاصطناعي و Machine Learning",
+          desc: "Python + أساسيات الرياضيات (جبر خطي + إحصاء) + مكتبات مثل Scikit-learn.",
+          lang: isArabic && !isEnglish ? "عربي" : isEnglish && !isArabic ? "إنجليزي" : "عربي/إنجليزي"
+        });
+      } else if (field.includes("cyber") || field.includes("سيبر") || field.includes("أمن")) {
+        recs.push({
+          title: "مسار Cyber Security للمبتدئين",
+          desc: "Networking basics + Linux + Web security fundamentals.",
+          lang: isArabic && !isEnglish ? "عربي" : isEnglish && !isArabic ? "إنجليزي" : "عربي/إنجليزي"
+        });
+      } else if (field.includes("english") || field.includes("انج") || field.includes("لغة")) {
+        recs.push({
+          title: "خطة تحسين اللغة الإنجليزية",
+          desc: "قواعد أساسية + استماع يومي + محادثة + كتابة بسيطة.",
+          lang: isArabic && !isEnglish ? "شروحات عربية + محتوى إنجليزي" : "إنجليزي"
+        });
+      } else {
+        recs.push({
+          title: "مسار تعلّم عام",
+          desc: "ابدأ بكورس تعريفي في المجال، ثم كورس متقدم، مع تطبيق عملي بسيط.",
+          lang: isArabic && !isEnglish ? "عربي" : isEnglish && !isArabic ? "إنجليزي" : "عربي/إنجليزي"
+        });
+      }
+
+      return recs;
+    }
+
+    function finishConversation() {
+      sendBtn.disabled = true;
+      input.disabled = true;
+
+      addMessage("شكرًا على إجاباتك 🙌\nدي ملخّص بسيط لملفك التعليمي، وبعده شوية اقتراحات كورسات ومسار تعلّم:", "bot");
+
+      const summary =
+        `• الخلفية التعليمية: ${answers.education_background}\n` +
+        `• المستوى الحالي: ${answers.current_level}\n` +
+        `• الهدف / المجال: ${answers.target_field_or_goal}\n` +
+        `• لغة الكورسات المفضلة: ${answers.preferred_language}\n` +
+        `• الساعات المتاحة أسبوعيًا: ${answers.available_hours_per_week}\n` +
+        `• الإطار الزمني: ${answers.time_frame}`;
+
+      addMessage(summary, "bot");
+
+      const recs = getRecommendations(answers);
+      let recText = "🔎 اقتراحات مبدئية لمسار التعلّم والكورسات:\n\n";
+      recs.forEach((c, idx) => {
+        recText += `${idx + 1}) ${c.title} (${c.lang})\n${c.desc}\n\n`;
+      });
+
+      addMessage(recText, "bot");
+    }
+
+    // events
+    sendBtn.addEventListener("click", handleUserAnswer);
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") handleUserAnswer();
+    });
+
+    // start
+    askNextQuestion();
+  </script>
+</body>
+</html>
